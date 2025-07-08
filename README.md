@@ -18,3 +18,7 @@ Jinja2：模板引擎。
 ### 前端
 Tailwind CSS：用于快速构建用户界面。  
 Font Awesome：提供图标支持。
+## 安装与使用
+### 安装依赖
+首先，确保你已经安装了 Python 3.11 及以上版本。然后，在项目根目录下运行以下命令安装所需的依赖：  
+`pip install -r requirements.txt`
