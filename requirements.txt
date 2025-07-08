@@ -1,0 +1,5 @@
+flask==1.0.2
+python-pptx==0.6.21
+requests
+Pillow
+Jinja2

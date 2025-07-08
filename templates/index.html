@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-height {
+                transition: max-height 0.5s ease-in-out;
+            }
+            .file-drop-active {
+                @apply border-accent bg-accent/10;
+            }
+            .animate-fadeIn {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300" id="navbar">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa fa-file-powerpoint-o text-primary text-2xl mr-2"></i>
+                    <span class="text-xl font-bold">PPT生成器</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="hidden md:block px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                        <i class="fa fa-question-circle mr-1"></i> 帮助
+                    </button>
+                    <button class="px-4 py-2 rounded-md text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors duration-200">
+                        <i class="fa fa-github mr-1"></i> GitHub
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+        <!-- 欢迎信息 -->
+        <section class="mb-12 text-center">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-dark mb-4">从文档自动生成专业PPT</h1>
+            <p class="text-gray-600 text-lg max-w-3xl mx-auto">上传你的Markdown文档，我们会自动为你生成PPT。</p>
+        </section>
+
+        <!-- 上传区域 -->
+        <section class="bg-white rounded-xl shadow-lg p-8 mb-8 transition-all duration-500 transform hover:shadow-xl">
+            <h2 class="text-2xl font-bold mb-6 flex items-center justify-center">
+                <i class="fa fa-file-text-o text-primary mr-2"></i> 上传文档
+            </h2>
+            
+            <!-- 文件拖放区域 -->
+            <div id="file-drop-area" class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center mb-8 hover:border-primary transition-all duration-300 cursor-pointer">
+                <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-6"></i>
+                <h3 class="text-xl font-medium mb-3">拖放文件到这里</h3>
+                <p class="text-gray-500 mb-6">或者</p>
+                <label class="cursor-pointer">
+                    <span class="px-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-primary/90 transition-colors duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                        <i class="fa fa-file-text-o mr-2"></i> 选择文件
+                    </span>
+                    <input type="file" id="document-file" class="hidden" accept=".txt,.md">
+                </label>
+                <p class="text-gray-500 text-sm mt-4">支持的格式：.txt, .md</p>
+            </div>
+            
+            <div id="file-info" class="hidden mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex items-center">
+                    <div class="bg-primary/10 p-3 rounded-lg mr-4">
+                        <i class="fa fa-file-text-o text-primary text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 id="file-name" class="font-medium text-lg"></h4>
+                        <p id="file-size" class="text-sm text-gray-500"></p>
+                    </div>
+                    <button id="remove-file" class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="generate-ppt" class="px-8 py-3 bg-primary text-white rounded-md font-medium hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none" disabled>
+                    <i class="fa fa-magic mr-2"></i> 生成PPT
+                </button>
+            </div>
+        </section>
+
+        <!-- 生成结果区域 -->
+        <section id="result-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 transition-all duration-500 transform hover:shadow-xl">
+            <h2 class="text-2xl font-bold mb-6 flex items-center justify-center">
+                <i class="fa fa-check-circle text-secondary mr-2"></i> 生成成功
+            </h2>
+            
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-secondary/10 mb-4">
+                    <i class="fa fa-file-powerpoint-o text-secondary text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-medium mb-2">演示文稿已生成</h3>
+                <p class="text-gray-600">点击下方按钮下载生成的PPT文件</p>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="download-ppt" class="px-8 py-3 bg-secondary text-white rounded-md font-medium hover:bg-secondary/90 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fa fa-download mr-2"></i> 下载PPT
+                </button>
+            </div>
+        </section>
+
+        <!-- 错误信息区域 -->
+        <section id="error-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 border-l-4 border-red-500">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 pt-0.5">
+                    <i class="fa fa-exclamation-circle text-red-500 text-2xl"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-lg font-medium text-gray-900" id="error-title">生成失败</h3>
+                    <div class="mt-2 text-sm text-gray-700" id="error-message">
+                        处理您的文档时发生错误，请重试。
+                    </div>
+                    <div class="mt-4">
+                        <button id="try-again" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                            再试一次
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载状态 -->
+        <section id="loading-section" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-8 max-w-md w-full text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                    <i class="fa fa-spinner fa-spin text-primary text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-medium mb-2">正在生成PPT</h3>
+                <p class="text-gray-600 mb-4">请稍候，我们正在处理您的文档...</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                    <div id="loading-progress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="loading-message" class="text-sm text-gray-500">准备中...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center">
+                        <i class="fa fa-file-powerpoint-o text-primary text-2xl mr-2"></i>
+                        <span class="text-xl font-bold">PPT生成器</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-2">将文本转换为精美的演示文稿</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+                &copy; 2025 PPT生成器. 保留所有权利.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileDropArea = document.getElementById('file-drop-area');
+            const documentFile = document.getElementById('document-file');
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+            const removeFile = document.getElementById('remove-file');
+            const generatePpt = document.getElementById('generate-ppt');
+            const resultSection = document.getElementById('result-section');
+            const downloadPpt = document.getElementById('download-ppt');
+            const loadingSection = document.getElementById('loading-section');
+            const loadingProgress = document.getElementById('loading-progress');
+            const loadingMessage = document.getElementById('loading-message');
+            const navbar = document.getElementById('navbar');
+            const errorSection = document.getElementById('error-section');
+            const errorTitle = document.getElementById('error-title');
+            const errorMessage = document.getElementById('error-message');
+            const tryAgain = document.getElementById('try-again');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            let selectedFile = null;
+            let generatedFileUrl = null;
+
+            // 监听滚动事件，改变导航栏样式
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 10) {
+                    navbar.classList.add('shadow-lg');
+                    navbar.classList.add('bg-white/95');
+                    navbar.classList.add('backdrop-blur-sm');
+                } else {
+                    navbar.classList.remove('shadow-lg');
+                    navbar.classList.remove('bg-white/95');
+                    navbar.classList.remove('backdrop-blur-sm');
+                }
+            });
+
+            // 文件拖放相关事件
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                fileDropArea.classList.add('file-drop-active');
+            }
+
+            function unhighlight() {
+                fileDropArea.classList.remove('file-drop-active');
+            }
+
+            fileDropArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length) {
+                    handleFiles(files[0]);
+                }
+            }
+
+            // 文件选择事件
+            documentFile.addEventListener('change', function() {
+                if (this.files.length) {
+                    handleFiles(this.files[0]);
+                }
+            });
+
+            // 点击上传区域也触发文件选择
+            fileDropArea.addEventListener('click', function() {
+                if (!fileInfo.classList.contains('hidden')) return;
+                documentFile.click();
+            });
+
+            // 处理选中的文件
+            function handleFiles(file) {
+                if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
+                    showError('文件格式错误', '请上传txt或md格式的文件');
+                    return;
+                }
+
+                selectedFile = file;
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                
+                fileInfo.classList.remove('hidden');
+                generatePpt.removeAttribute('disabled');
+                
+                // 添加文件选择动画
+                fileInfo.classList.add('animate-fadeIn');
+                setTimeout(() => {
+                    fileInfo.classList.remove('animate-fadeIn');
+                }, 500);
+            }
+
+            // 移除文件
+            removeFile.addEventListener('click', function() {
+                resetAppState();
+            });
+
+            // 再试一次按钮
+            tryAgain.addEventListener('click', function() {
+                resetAppState();
+                errorSection.classList.add('hidden');
+            });
+
+            // 生成PPT
+            generatePpt.addEventListener('click', function() {
+                if (!selectedFile) return;
+                
+                // 显示加载状态
+                loadingSection.classList.remove('hidden');
+                simulateLoading();
+                
+                // 发送文件到后端
+                const formData = new FormData();
+                formData.append('document', selectedFile);
+                
+                fetch('/generate', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken || ''
+                    }
+                })
+                .then(response => {
+                    loadingSection.classList.add('hidden');
+                    
+                    if (!response.ok) {
+                        throw new Error('生成PPT失败');
+                    }
+                    
+                    return response.blob();
+                })
+                .then(blob => {
+                    // 创建下载链接
+                    generatedFileUrl = URL.createObjectURL(blob);
+                    
+                    // 显示结果区域
+                    resultSection.classList.remove('hidden');
+                    
+                    // 添加结果显示动画
+                    resultSection.classList.add('animate-fadeIn');
+                    setTimeout(() => {
+                        resultSection.classList.remove('animate-fadeIn');
+                    }, 500);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('生成失败', '处理您的文档时发生错误，请重试。');
+                });
+            });
+
+            // 下载PPT
+            downloadPpt.addEventListener('click', function() {
+                if (!generatedFileUrl) return;
+                
+                // 创建下载链接并触发下载
+                const link = document.createElement('a');
+                link.href = generatedFileUrl;
+                link.download = 'generated-presentation.pptx';
+                link.click();
+                
+                // 释放URL对象
+                URL.revokeObjectURL(generatedFileUrl);
+                
+                // 重置应用状态
+                setTimeout(() => {
+                    resetAppState();
+                    resultSection.classList.add('hidden');
+                }, 1000);
+            });
+
+            // 显示错误信息
+            function showError(title, message) {
+                errorTitle.textContent = title;
+                errorMessage.textContent = message;
+                errorSection.classList.remove('hidden');
+                
+                // 添加错误显示动画
+                errorSection.classList.add('animate-fadeIn');
+                setTimeout(() => {
+                    errorSection.classList.remove('animate-fadeIn');
+                }, 500);
+            }
+
+            // 重置应用状态
+            function resetAppState() {
+                selectedFile = null;
+                documentFile.value = '';
+                fileInfo.classList.add('hidden');
+                generatePpt.setAttribute('disabled', 'true');
+                generatedFileUrl = null;
+            }
+
+            // 模拟加载进度
+            function simulateLoading() {
+                let progress = 0;
+                const messages = ['准备中...', '分析文档...', '生成幻灯片...', '处理内容...', '优化布局...'];
+                const messageInterval = 3000 / messages.length;
+                
+                const interval = setInterval(() => {
+                    progress += 5;
+                    loadingProgress.style.width = `${progress}%`;
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                    }
+                }, 150);
+                
+                let messageIndex = 0;
+                const messageTimer = setInterval(() => {
+                    if (messageIndex < messages.length) {
+                        loadingMessage.textContent = messages[messageIndex];
+                        messageIndex++;
+                    } else {
+                        clearInterval(messageTimer);
+                    }
+                }, messageInterval);
+            }
+
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html>    
