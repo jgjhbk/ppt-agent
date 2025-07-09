@@ -1,4 +1,4 @@
-import re  # 新增：导入正则模块
+import re
 from typing import List, Dict, Any, Optional
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -41,7 +41,7 @@ class PPTGenerator:
                 run.font.size = Pt(20)  
             paragraph.line_spacing = 1.5
 
-        # 创建内容页（核心修复：处理一级标题的正文）
+        # 创建内容页
         self._process_sections(doc_model.sections, doc_model.images)
 
         self.prs.save(output_path)
@@ -49,16 +49,12 @@ class PPTGenerator:
     def _process_sections(self, sections: List[Dict], images: Dict[str, Any], parent_level: int = 0) -> None:
         """递归处理章节，生成对应的幻灯片"""
         for section in sections:
-            # 修复：一级标题不仅显示标题，还要显示其正文内容
             if section['level'] == 1:  
-                # 1. 生成一级标题幻灯片
                 self._add_title_only_slide(section['title'])
                 
-                # 2. 如果一级标题有正文，生成内容幻灯片（核心修复点）
                 if section['content'].strip():
                     self._add_content_slide(section['content'], images)
 
-                # 3. 处理子章节
                 if section.get('subsections'):
                     self._process_sections(section['subsections'], images, section['level'])
             
@@ -66,11 +62,7 @@ class PPTGenerator:
                 self._add_bullet_slide(section['title'], section['content'], images)
                 if section.get('subsections'):
                     self._process_sections(section['subsections'], images, section['level'])
-            
-            elif section['level'] == 3:  # 三级标题
-                self._add_sub_bullet_slide(section['title'], section['content'], images)
 
-    # 以下方法保持不变，但确保内容能正确传递
     def _add_title_only_slide(self, title: str) -> None:
         """添加仅包含标题的幻灯片"""
         slide_layout = self.prs.slide_layouts[5]
@@ -123,25 +115,8 @@ class PPTGenerator:
         body_shape = slide.placeholders[1]
         self._populate_content(body_shape, content, images)
 
-    def _add_sub_bullet_slide(self, title: str, content: str, images: Dict[str, Any]) -> None:
-        """添加子要点幻灯片"""
-        slide_layout = self.prs.slide_layouts[1]
-        slide = self.prs.slides.add_slide(slide_layout)
-
-        title_shape = slide.shapes.title
-        title_shape.text = f"• {title}"
-        for paragraph in title_shape.text_frame.paragraphs:
-            for run in paragraph.runs:
-                run.font.name = "宋体"
-                run.font.size = Pt(22)
-            paragraph.alignment = PP_ALIGN.LEFT
-            paragraph.line_spacing = 1.5
-
-        body_shape = slide.placeholders[1]
-        self._populate_content(body_shape, content, images)
-
     def _populate_content(self, body_shape, content: str, images: Dict[str, Any]) -> None:
-        """处理内容，支持列表、图片和代码块"""
+        """处理内容，支持列表、图片、代码块和&&分页标记"""
         tf = body_shape.text_frame
         tf.text = ""
 
@@ -151,6 +126,29 @@ class PPTGenerator:
             self._set_font_and_spacing(p)
             return
 
+        # 检测分页标记&&，并分割内容
+        page_break_pattern = re.compile(r'&&')
+        content_parts = page_break_pattern.split(content)
+        
+        # 处理第一部分内容（当前幻灯片）
+        first_part = content_parts[0].strip()
+        if first_part:
+            self._process_single_part(tf, first_part, images)
+        
+        # 处理剩余部分（创建新幻灯片）
+        for part in content_parts[1:]:
+            part = part.strip()
+            if part:
+                # 创建新幻灯片
+                new_slide = self.prs.slides.add_slide(self.prs.slide_layouts[1])
+                # 清空新幻灯片标题
+                new_slide.shapes.title.text = ""
+                # 处理新幻灯片内容
+                new_body = new_slide.placeholders[1]
+                self._process_single_part(new_body.text_frame, part, images)
+
+    def _process_single_part(self, text_frame, content: str, images: Dict[str, Any]) -> None:
+        """处理单部分内容（不含分页标记的文本块）"""
         image_pattern = re.compile(r'!\[(.*?)\]\((.*?)\)')
         code_block_pattern = re.compile(r'```([\s\S]*?)```')
         
@@ -160,7 +158,7 @@ class PPTGenerator:
         for code_match in code_blocks:
             pre_code_text = content[last_end:code_match.start()].strip()
             if pre_code_text:
-                self._process_regular_content(tf, pre_code_text, images)
+                self._process_regular_content(text_frame, pre_code_text, images)
 
             code_content = code_match.group(1).strip()
             self._add_code_block(code_content)
@@ -168,7 +166,7 @@ class PPTGenerator:
 
         remaining_text = content[last_end:].strip()
         if remaining_text:
-            self._process_regular_content(tf, remaining_text, images)
+            self._process_regular_content(text_frame, remaining_text, images)
 
     def _process_regular_content(self, text_frame, content: str, images: Dict[str, Any]) -> None:
         """处理常规内容"""
@@ -322,4 +320,4 @@ class PPTGenerator:
             p = tf.add_paragraph()
             p.text = f"无法加载图片: {alt_text}"
             p.font.name = "宋体"
-            p.font.size = Pt(18)    
+            p.font.size = Pt(18)
