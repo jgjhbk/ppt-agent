@@ -34,7 +34,7 @@ keywords: AI, NLP, 机器学习, 深度学习, 大语言模型
    - 线性回归
    - 逻辑回归
    - 决策树回归
-&&
+
  （2）无监督学习
 
 无监督学习是指从无标记的数据中学习模式的机器学习任务。
@@ -51,7 +51,7 @@ keywords: AI, NLP, 机器学习, 深度学习, 大语言模型
 （1）神经网络基础
 
 神经网络由输入层、隐藏层和输出层组成，每层包含多个神经元。
-import torch
+```import torch
 import torch.nn as nn
 
 class SimpleNN(nn.Module):
@@ -60,8 +60,13 @@ class SimpleNN(nn.Module):
         self.layer1 = nn.Linear(input_size, hidden_size)
         self.relu = nn.ReLU()
         self.layer2 = nn.Linear(hidden_size, output_size)
-     ...
-&&
+    class SimpleNN(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(SimpleNN, self).__init__()
+        self.layer1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.layer2 = nn.Linear(hidden_size, output_size)```
+     
 （2）循环神经网络(RNN)
 
 RNN特别适合处理序列数据，如文本。
@@ -69,7 +74,7 @@ RNN特别适合处理序列数据，如文本。
 - 基本RNN
 - LSTM (长短期记忆网络)
 - GRU (门控循环单元)
-&&
+
 （3）Transformer架构
 
 Transformer是当前NLP领域的主流架构，基于自注意力机制。
@@ -91,7 +96,6 @@ Transformer是当前NLP领域的主流架构，基于自注意力机制。
 3） 命名实体识别
 4） 词向量表示
    - Word2Vec
-   - GloVe
    - BERT
 
 ## 2.高级NLP任务
@@ -100,7 +104,7 @@ Transformer是当前NLP领域的主流架构，基于自注意力机制。
 - 情感分析
 - 垃圾邮件检测
 - 新闻分类
-&& 
+
 （2）机器翻译
 
 - 基于统计的机器翻译
@@ -109,7 +113,7 @@ Transformer是当前NLP领域的主流架构，基于自注意力机制。
   - 长距离依赖
   - 领域适应性
   - 低资源语言
-&&
+
 （3）问答系统
 
 - 开放域问答
